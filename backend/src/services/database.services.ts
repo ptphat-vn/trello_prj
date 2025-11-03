@@ -11,7 +11,7 @@ class DatabaseService {
   }
   // client là phía BE
 
-  async run() {
+  async connect() {
     try {
       await this.db.command({ ping: 1 })
       console.log('Pinged your deployment. You successfully connected to MongoDB!')

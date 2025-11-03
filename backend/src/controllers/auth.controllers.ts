@@ -2,9 +2,9 @@
 // và phân phát vào các services đúng chổ
 
 import { Request, Response } from 'express'
-import User from '~/models/schemas/User.schema'
+import { RegisterReqBody } from '~/models/requests/auth.requests'
+import { ParamsDictionary } from 'express-serve-static-core'
 import authService from '~/services/auth.services'
-import databaseService from '~/services/database.services'
 
 // controller là nơi tập kết và xử lí logic cho các dữ liệu nhận được
 // trong controller các dữ liệu đều phải clean
@@ -25,10 +25,18 @@ export const loginController = (req: Request, res: Response) => {
   }
 }
 
-export const registerController = async (req: Request, res: Response) => {
-  const { email, password } = req.body
+export const registerController = async (req: Request<ParamsDictionary, any, RegisterReqBody>, res: Response) => {
+  const { email } = req.body
   try {
-    const result = await authService.register({ email, password })
+    const isDup = await authService.checkEmailExist(email)
+    if (isDup) {
+      const customError = new Error('Email already in use')
+      Object.defineProperty(customError, 'message', {
+        enumerable: true
+      })
+      throw customError
+    }
+    const result = await authService.register(req.body)
     console.log(result)
     return res.status(200).json({
       message: 'User registered successfully',
@@ -37,7 +45,7 @@ export const registerController = async (req: Request, res: Response) => {
   } catch (err) {
     return res.status(400).json({
       message: 'Error registering user',
-      err: err
+      error: err
     })
   }
 }

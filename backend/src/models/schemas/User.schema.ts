@@ -1,20 +1,12 @@
 import { ObjectId } from 'mongodb'
+import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 
-enum UserVerifyStatus {
-  Unverified, // chưa xác thực email, mặc định = 0
-  Verified, // đã xác thực email
-  Banned // bị khóa
-}
-enum USER_ROLE {
-  ADMIN, //0
-  USER //1
-}
 //interface dùng để định nghĩa 1 user cần những gì khi tạo ra
 interface UserType {
   _id?: ObjectId //optional là ?
-  name?: string
+  name: string
   email: string
-  date_of_birth?: Date
+  date_of_birth: Date
   password: string
   created_at?: Date
   updated_at?: Date //lúc mới tạo chưa có gì thì nên cho bằng create_at
