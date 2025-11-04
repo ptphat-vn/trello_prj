@@ -1,51 +1,51 @@
 // controller cũng chỉ là handler có nhiệm vụ tập kết dữ liệu từ người dùng
 // và phân phát vào các services đúng chổ
 
-import { Request, Response } from 'express'
-import { RegisterReqBody } from '~/models/requests/auth.requests'
+import { NextFunction, Request, Response } from 'express'
+import { LoginReqBody, RegisterReqBody } from '~/models/requests/auth.requests'
 import { ParamsDictionary } from 'express-serve-static-core'
 import authService from '~/services/auth.services'
+import HTTP_STATUS from '~/constants/httpStatus'
+import { AUTH_MESSAGE } from '~/constants/message'
+import { ErrorWithStatus } from '~/models/Error'
 
 // controller là nơi tập kết và xử lí logic cho các dữ liệu nhận được
 // trong controller các dữ liệu đều phải clean
 
-export const loginController = (req: Request, res: Response) => {
-  const { email, password } = req.body
-  if (email === 'tanphatphan091@gmail.com' && password === 'user123') {
-    res.json({
-      data: {
-        fname: 'Phat',
-        yob: 2004
-      }
-    })
-  } else {
-    res.status(400).json({
-      error: 'Invalid email or password!!'
+export const registerController = async (
+  req: Request<ParamsDictionary, any, RegisterReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email } = req.body
+
+  const isDup = await authService.checkEmailExist(email)
+  if (isDup) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      message: AUTH_MESSAGE.EMAIL_ALREADY_EXISTS
     })
   }
+  const result = await authService.register(req.body)
+  console.log(result)
+  res.status(HTTP_STATUS.CREATED).json({
+    message: AUTH_MESSAGE.REGISTER_SUCCESSFULLY,
+    data: result
+  })
 }
 
-export const registerController = async (req: Request<ParamsDictionary, any, RegisterReqBody>, res: Response) => {
-  const { email } = req.body
-  try {
-    const isDup = await authService.checkEmailExist(email)
-    if (isDup) {
-      const customError = new Error('Email already in use')
-      Object.defineProperty(customError, 'message', {
-        enumerable: true
-      })
-      throw customError
-    }
-    const result = await authService.register(req.body)
-    console.log(result)
-    return res.status(200).json({
-      message: 'User registered successfully',
-      result: result
-    })
-  } catch (err) {
-    return res.status(400).json({
-      message: 'Error registering user',
-      error: err
-    })
-  }
+export const loginController = async (
+  req: Request<ParamsDictionary, any, LoginReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  // cần lấy email, password để tìm xem user nào đang sở hữu
+  // nếu không có thì user nào ngừng cuộc chơi,
+  // nếu có thì tạo accessToken và refreshToken trả về cho user
+  const { email, password } = req.body
+  const result = await authService.login({ email, password })
+  res.status(HTTP_STATUS.OK).json({
+    message: AUTH_MESSAGE.LOGIN_SUCCESSFULLY,
+    data: result
+  })
 }
