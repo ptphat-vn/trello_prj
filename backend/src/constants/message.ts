@@ -25,5 +25,14 @@ export const AUTH_MESSAGE = {
   INVALID_EMAIL_OR_PASSWORD: 'Invalid email or password',
   LOGIN_SUCCESSFULLY: 'Login successfully',
   // Register
-  REGISTER_SUCCESSFULLY: 'Register successfully'
+  REGISTER_SUCCESSFULLY: 'Register successfully',
+  // access token
+  ACCESS_TOKEN_IS_REQUIRED: 'Access token is required',
+  ACCESS_TOKEN_INVALID: 'Access token is invalid',
+  TOKENS_DO_NOT_MATCH: 'Tokens do not match',
+  // refresh token
+  REFRESH_TOKEN_IS_REQUIRED: 'Refresh token is required',
+  REFRESH_TOKEN_INVALID: 'Refresh token is invalid',
+  // logout
+  LOGOUT_SUCCESSFULLY: 'Logout successfully'
 } as const

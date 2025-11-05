@@ -2,7 +2,7 @@
 // và phân phát vào các services đúng chổ
 
 import { NextFunction, Request, Response } from 'express'
-import { LoginReqBody, RegisterReqBody } from '~/models/requests/auth.requests'
+import { LoginReqBody, LogoutReqBody, RegisterReqBody, TokenPayload } from '~/models/requests/auth.requests'
 import { ParamsDictionary } from 'express-serve-static-core'
 import authService from '~/services/auth.services'
 import HTTP_STATUS from '~/constants/httpStatus'
@@ -47,5 +47,32 @@ export const loginController = async (
   res.status(HTTP_STATUS.OK).json({
     message: AUTH_MESSAGE.LOGIN_SUCCESSFULLY,
     data: result
+  })
+}
+
+export const logoutController = async (
+  req: Request<ParamsDictionary | any | LogoutReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { refresh_token } = req.body
+  // xem thử user_id trong payload của refresh_token và access_token có giống không
+  const { user_id: user_id_at } = req.decode_authorization as TokenPayload
+  const { user_id: user_id_rf } = req.decode_refresh_token as TokenPayload
+  if (user_id_at !== user_id_rf) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: AUTH_MESSAGE.REFRESH_TOKEN_INVALID
+    })
+  }
+  await authService.checkRefreshToken({
+    user_id: user_id_at,
+    refresh_token
+  })
+  // nếu mà trùng rồi thì mình xem thử refresh_token có được quyền dùng dịch vụ hay không
+  // khi nào mà có mã đó trong DB thì mới cho dùng dịch vụ
+  await authService.logout(refresh_token)
+  res.status(HTTP_STATUS.OK).json({
+    message: AUTH_MESSAGE.LOGOUT_SUCCESSFULLY
   })
 }

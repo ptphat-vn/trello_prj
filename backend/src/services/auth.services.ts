@@ -8,16 +8,20 @@ import { signToken } from '~/utils/jwt'
 import { ErrorWithStatus } from '~/models/Error'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { AUTH_MESSAGE } from '~/constants/message'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
+import { ObjectId } from 'mongodb'
 class AuthServices {
   private signAccessToken(user_id: string) {
     return signToken({
       payload: { user_id, token_type: TokenType.AccessToken },
+      privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
       options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
     })
   }
   private signRefreshToken(user_id: string) {
     return signToken({
       payload: { user_id, token_type: TokenType.RefreshToken },
+      privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
       options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN }
     })
   }
@@ -57,7 +61,37 @@ class AuthServices {
       this.signAccessToken(user_id),
       this.signRefreshToken(user_id)
     ])
+    // lưu refresh token lại vào DB
+    await databaseService.refresh_tokens.insertOne(
+      new RefreshToken({
+        token: refresh_token,
+        user_id: new ObjectId(user_id)
+      })
+    )
     return { access_token, refresh_token }
+  }
+
+  async checkRefreshToken({ user_id, refresh_token }: { user_id: string; refresh_token: string }) {
+    const refreshToken = await databaseService.refresh_tokens.findOne({
+      token: refresh_token,
+      user_id: new ObjectId(user_id)
+    })
+    console.log(refreshToken)
+
+    if (!refreshToken) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: AUTH_MESSAGE.REFRESH_TOKEN_INVALID
+      })
+    }
+    // nếu mà trùng rồi thì mình xem thử refresh_token có được quyền truy cập dịch vụ không
+    return refreshToken
+  }
+  async logout(refresh_token: string) {
+    await databaseService.refresh_tokens.deleteOne({ token: refresh_token })
+    return {
+      message: AUTH_MESSAGE.LOGOUT_SUCCESSFULLY
+    }
   }
 }
 

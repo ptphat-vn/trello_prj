@@ -1,6 +1,11 @@
 import express from 'express'
-import { loginController, registerController } from '~/controllers/auth.controllers'
-import { loginValidator, registerValidator } from '~/middlewares/auth.middlewares'
+import { loginController, logoutController, registerController } from '~/controllers/auth.controllers'
+import {
+  accessTokenValidators,
+  loginValidator,
+  refreshTokenValidator,
+  registerValidator
+} from '~/middlewares/auth.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 // tạo user route
@@ -35,4 +40,15 @@ body: {
 
 authRouter.post('/login', loginValidator, wrapAsync(loginController))
 
+/*
+desc: Logout user,
+path: /logout,
+method: post,
+headers: {
+    Authorization: 'Bearer <access_token>'
+},
+body: {
+refresh_token: string}
+*/
+authRouter.post('/logout', accessTokenValidators, refreshTokenValidator, wrapAsync(logoutController))
 export default authRouter
